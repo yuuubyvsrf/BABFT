@@ -1,0 +1,133 @@
+-- Rayfield UI Kütüphanesini Yükleme
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- Ana Pencereyi Oluşturma
+local Window = Rayfield:CreateWindow({
+    Name = "Build A Boat For Treasure | AutoFarm",
+    LoadingTitle = "Betik Yükleniyor...",
+    LoadingSubtitle = "Kararlı Otomatik Çiftlik Sistemi",
+    ConfigurationSaving = {
+        Enabled = false,
+        FolderName = nil,
+        FileName = "BuildABoatConfig"
+    },
+    Discord = {
+        Enabled = false,
+        Invite = "noinvite",
+        RememberJoins = true
+    },
+    KeySystem = false,
+    KeySettings = {
+        Title = "Güvenlik Anahtarı",
+        Subtitle = "Anahtar Sistemi",
+        Note = "Anahtar yok.",
+        FileName = "Key",
+        SaveKey = true,
+        GrabKeyFromSite = false,
+        Key = {""}
+    }
+})
+
+-- Sekme Oluşturma
+local MainTab = Window:CreateTab("Ana Sayfa", 4483362458)
+local MainSection = MainTab:CreateSection("AutoFarm Kontrolleri")
+
+-- Gerekli Servisler
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+
+-- Waypoint (Konum) Listesi
+local waypoints = {
+    Vector3.new(104.11, 195.19, 1372.54),
+    Vector3.new(143.48, 132.78, 2169.80),
+    Vector3.new(176.12, 107.90, 3194.81),
+    Vector3.new(99.84, 154.73, 4052.70),
+    Vector3.new(237.09, 187.32, 4493.49),
+    Vector3.new(-19.11, 175.40, 5572.63),
+    Vector3.new(-371.15, 56.38, 6427.05),
+    Vector3.new(-195.10, 122.55, 7156.03),
+    Vector3.new(115.81, 19.71, 7941.43),
+    Vector3.new(-47.21, -361.12, 9490.04)
+}
+
+-- Durum Değişkeni
+local autoFarmActive = false
+
+-- Güvenli Karakter Kök Parçasını Alma Fonksiyonu
+local function GetHumanoidRootPart()
+    local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+    return character:FindFirstChild("HumanoidRootPart")
+end
+
+-- Kararlı ve Güvenli AutoFarm Döngüsü
+local function StartAutoFarmLoop()
+    task.spawn(function()
+        while autoFarmActive do
+            local rootPart = GetHumanoidRootPart()
+            if not rootPart then
+                task.wait(1)
+                continue
+            end
+
+            -- Her bir konuma sırasıyla gitme
+            for index, targetPosition in ipairs(waypoints) do
+                if not autoFarmActive then break end
+                
+                -- Karakterin anlık konumunu güvenli bir şekilde hedef konuma sabitleme
+                local currentRoot = GetHumanoidRootPart()
+                if currentRoot then
+                    currentRoot.CFrame = CFrame.new(targetPosition)
+                    
+                    -- Hız dalgalanmalarını önlemek ve kararlılığı korumak için hareket kuvvetini sıfırlama
+                    if currentRoot:FindFirstChild("BodyVelocity") == nil then
+                        currentRoot.Velocity = Vector3.new(0, 0, 0)
+                    end
+                end
+
+                -- Bekleme Süreleri: 10. konumda 10 saniye (hazine alımı için), diğer konumlarda 1 saniye
+                if index == #waypoints then
+                    task.wait(10)
+                else
+                    task.wait(1)
+                end
+            end
+
+            -- Döngü tamamlandığında tekrar başlatmadan önce kısa bir dinlenme süresi
+            task.wait(2)
+        end
+    end)
+end
+
+-- Rayfield Toggle (Açma/Kapatma) Elemanı
+MainTab:CreateToggle({
+    Name = "AutoFarm Başlat",
+    CurrentValue = false,
+    Flag = "AutoFarmToggle",
+    Callback = function(Value)
+        autoFarmActive = Value
+        if autoFarmActive then
+            Rayfield:Notify({
+                Title = "AutoFarm Aktif",
+                Content = "Konumlar geziliyor (Son konumda 10 sn hazine beklemesi aktif).",
+                Duration = 3,
+                Image = 4483362458,
+            })
+            StartAutoFarmLoop()
+        else
+            Rayfield:Notify({
+                Title = "AutoFarm Durduruldu",
+                Content = "İşlem güvenli bir şekilde sonlandırıldı.",
+                Duration = 3,
+                Image = 4483362458,
+            })
+        end
+    end,
+})
+
+-- Bildirim
+Rayfield:Notify({
+    Title = "Betik Güncellendi",
+    Content = "Son konum bekleme süresi 10 saniyeye çıkarıldı.",
+    Duration = 5,
+    Image = 4483362458,
+})
